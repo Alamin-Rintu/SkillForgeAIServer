@@ -1,0 +1,12 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = require("express");
+const roadmapController_1 = require("../controllers/roadmapController");
+const router = (0, express_1.Router)();
+router.get('/', roadmapController_1.getRoadmaps);
+router.get('/saved', roadmapController_1.getSavedRoadmaps);
+router.get('/:id', roadmapController_1.getRoadmapById);
+router.post('/', roadmapController_1.createRoadmap);
+router.post('/save', roadmapController_1.toggleSaveRoadmap);
+router.delete('/:id', roadmapController_1.deleteRoadmap);
+exports.default = router;

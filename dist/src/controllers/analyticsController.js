@@ -3,10 +3,12 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getAnalytics = void 0;
+exports.getUserStats = exports.getAnalytics = void 0;
 const User_1 = __importDefault(require("../models/User"));
 const Roadmap_1 = __importDefault(require("../models/Roadmap"));
+const SavedRoadmap_1 = __importDefault(require("../models/SavedRoadmap"));
 const ResumeAnalysis_1 = __importDefault(require("../models/ResumeAnalysis"));
+const AIChat_1 = __importDefault(require("../models/AIChat"));
 const getAnalytics = async (req, res) => {
     try {
         const totalUsers = await User_1.default.countDocuments() || 14850;
@@ -47,3 +49,23 @@ const getAnalytics = async (req, res) => {
     }
 };
 exports.getAnalytics = getAnalytics;
+const getUserStats = async (req, res) => {
+    try {
+        const userId = req.query.userId || 'demo-user-123';
+        const createdCount = await Roadmap_1.default.countDocuments({ creatorId: userId });
+        const savedCount = await SavedRoadmap_1.default.countDocuments({ userId });
+        const latestResume = await ResumeAnalysis_1.default.findOne({ userId }).sort({ createdAt: -1 });
+        const chatCount = await AIChat_1.default.countDocuments({ userId });
+        const stats = {
+            createdCount,
+            savedCount,
+            resumeScore: latestResume ? `${latestResume.score}%` : 'N/A',
+            interviewCount: Math.max(chatCount, 1)
+        };
+        return res.json({ success: true, data: stats });
+    }
+    catch (error) {
+        return res.status(500).json({ success: false, message: error.message });
+    }
+};
+exports.getUserStats = getUserStats;

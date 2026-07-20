@@ -9,8 +9,11 @@ const Review_1 = __importDefault(require("../models/Review"));
 const SavedRoadmap_1 = __importDefault(require("../models/SavedRoadmap"));
 const getRoadmaps = async (req, res) => {
     try {
-        const { search, category, difficulty, duration, sortBy, page = 1, limit = 9 } = req.query;
+        const { search, category, difficulty, duration, creatorId, sortBy, page = 1, limit = 9 } = req.query;
         let query = {};
+        if (creatorId) {
+            query.creatorId = creatorId;
+        }
         if (search) {
             query.$or = [
                 { title: { $regex: search, $options: 'i' } },
@@ -75,7 +78,7 @@ const getRoadmapById = async (req, res) => {
 exports.getRoadmapById = getRoadmapById;
 const createRoadmap = async (req, res) => {
     try {
-        const { title, shortDescription, fullDescription, difficulty, duration, category, skills, imageUrl } = req.body;
+        const { title, shortDescription, fullDescription, difficulty, duration, category, skills, imageUrl, creatorId, creatorName } = req.body;
         if (!title || !shortDescription || !fullDescription || !category) {
             return res.status(400).json({ success: false, message: 'Required fields missing.' });
         }
@@ -104,7 +107,9 @@ const createRoadmap = async (req, res) => {
                     resources: [{ name: 'System Design Patterns', url: '#', type: 'video' }]
                 }
             ],
-            prerequisites: ['Basic JavaScript / Programming', 'Git & GitHub']
+            prerequisites: ['Basic JavaScript / Programming', 'Git & GitHub'],
+            creatorId: creatorId || 'demo-user-123',
+            creatorName: creatorName || 'Developer'
         });
         return res.status(201).json({ success: true, data: roadmap });
     }

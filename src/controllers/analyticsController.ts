@@ -1,7 +1,9 @@
 import { Request, Response } from 'express';
 import User from '../models/User';
 import Roadmap from '../models/Roadmap';
+import SavedRoadmap from '../models/SavedRoadmap';
 import ResumeAnalysis from '../models/ResumeAnalysis';
+import AIChat from '../models/AIChat';
 
 export const getAnalytics = async (req: Request, res: Response) => {
   try {
@@ -39,6 +41,28 @@ export const getAnalytics = async (req: Request, res: Response) => {
     };
 
     return res.json({ success: true, data });
+  } catch (error: any) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+export const getUserStats = async (req: Request, res: Response) => {
+  try {
+    const userId = (req.query.userId as string) || 'demo-user-123';
+
+    const createdCount = await Roadmap.countDocuments({ creatorId: userId });
+    const savedCount = await SavedRoadmap.countDocuments({ userId });
+    const latestResume = await ResumeAnalysis.findOne({ userId }).sort({ createdAt: -1 });
+    const chatCount = await AIChat.countDocuments({ userId });
+
+    const stats = {
+      createdCount,
+      savedCount,
+      resumeScore: latestResume ? `${latestResume.score}%` : 'N/A',
+      interviewCount: Math.max(chatCount, 1)
+    };
+
+    return res.json({ success: true, data: stats });
   } catch (error: any) {
     return res.status(500).json({ success: false, message: error.message });
   }

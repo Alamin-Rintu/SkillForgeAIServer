@@ -1,15 +1,14 @@
 import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
-import { toNodeHandler } from 'better-auth/node';
-import { connectDB } from './src/config/db.js';
-import { connectMongoNative } from './src/config/mongo.js';
-import { auth } from './src/lib/auth.js';
-import authRoutes from './src/routes/authRoutes.js';
-import roadmapRoutes from './src/routes/roadmapRoutes.js';
-import blogRoutes from './src/routes/blogRoutes.js';
-import aiRoutes from './src/routes/aiRoutes.js';
-import analyticsRoutes from './src/routes/analyticsRoutes.js';
+import { connectDB } from './src/config/db';
+import { connectMongoNative } from './src/config/mongo';
+import { auth } from './src/lib/auth';
+import authRoutes from './src/routes/authRoutes';
+import roadmapRoutes from './src/routes/roadmapRoutes';
+import blogRoutes from './src/routes/blogRoutes';
+import aiRoutes from './src/routes/aiRoutes';
+import analyticsRoutes from './src/routes/analyticsRoutes';
 
 dotenv.config();
 
@@ -44,8 +43,16 @@ app.use(async (req: Request, res: Response, next: NextFunction) => {
   next();
 });
 
-// Better Auth Express Router Mount (Express 5 compatible)
-app.use('/api/auth', toNodeHandler(auth));
+// Better Auth Express Router Mount (Express 5 & ESM compatible)
+app.use('/api/auth', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { toNodeHandler } = await import('better-auth/node');
+    const handler = toNodeHandler(auth);
+    return handler(req, res);
+  } catch (err) {
+    next(err);
+  }
+});
 
 // Body Parsing Middleware for custom routes
 app.use(express.json({ limit: '10mb' }));

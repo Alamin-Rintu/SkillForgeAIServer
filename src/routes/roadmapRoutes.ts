@@ -7,14 +7,15 @@ import {
   toggleSaveRoadmap,
   getSavedRoadmaps
 } from '../controllers/roadmapController';
+import { authenticateToken } from '../middleware/authMiddleware';
 
 const router = Router();
 
-router.get('/', getRoadmaps);
-router.get('/saved', getSavedRoadmaps);
-router.get('/:id', getRoadmapById);
-router.post('/', createRoadmap);
-router.post('/save', toggleSaveRoadmap);
-router.delete('/:id', deleteRoadmap);
+router.get('/', authenticateToken, getRoadmaps);
+router.get('/saved', authenticateToken, getSavedRoadmaps);
+router.get('/:id', authenticateToken, getRoadmapById);
+router.post('/', authenticateToken, createRoadmap);
+router.post('/save', authenticateToken, toggleSaveRoadmap);
+router.delete('/:id', authenticateToken, deleteRoadmap);
 
 export default router;

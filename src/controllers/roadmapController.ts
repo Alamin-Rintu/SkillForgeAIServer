@@ -3,6 +3,7 @@ import mongoose from 'mongoose';
 import Roadmap from '../models/Roadmap';
 import Review from '../models/Review';
 import SavedRoadmap from '../models/SavedRoadmap';
+import { AuthenticatedRequest } from '../middleware/authMiddleware';
 
 export const getRoadmaps = async (req: Request, res: Response) => {
   try {
@@ -94,13 +95,16 @@ export const getRoadmapById = async (req: Request, res: Response) => {
   }
 };
 
-export const createRoadmap = async (req: Request, res: Response) => {
+export const createRoadmap = async (req: AuthenticatedRequest, res: Response) => {
   try {
     const { title, shortDescription, fullDescription, difficulty, duration, category, skills, imageUrl, creatorId, creatorName } = req.body;
 
     if (!title || !shortDescription || !fullDescription || !category) {
       return res.status(400).json({ success: false, message: 'Required fields missing.' });
     }
+
+    const resolvedCreatorId = creatorId || req.user?.id || 'demo-user-123';
+    const resolvedCreatorName = creatorName || req.user?.name || 'Developer';
 
     const roadmap = await Roadmap.create({
       title,
@@ -128,8 +132,8 @@ export const createRoadmap = async (req: Request, res: Response) => {
         }
       ],
       prerequisites: ['Basic JavaScript / Programming', 'Git & GitHub'],
-      creatorId: creatorId || 'demo-user-123',
-      creatorName: creatorName || 'Developer'
+      creatorId: resolvedCreatorId,
+      creatorName: resolvedCreatorName
     });
 
     return res.status(201).json({ success: true, data: roadmap });
@@ -148,16 +152,22 @@ export const deleteRoadmap = async (req: Request, res: Response) => {
   }
 };
 
-export const toggleSaveRoadmap = async (req: Request, res: Response) => {
+export const toggleSaveRoadmap = async (req: AuthenticatedRequest, res: Response) => {
   try {
-    const { roadmapId, userId = 'demo-user-123' } = req.body;
-    const existing = await SavedRoadmap.findOne({ userId, roadmapId });
+    const { roadmapId, userId } = req.body;
+    const resolvedUserId = userId || req.user?.id || 'demo-user-123';
+
+    if (!roadmapId) {
+      return res.status(400).json({ success: false, message: 'roadmapId is required.' });
+    }
+
+    const existing = await SavedRoadmap.findOne({ userId: resolvedUserId, roadmapId });
 
     if (existing) {
       await SavedRoadmap.findByIdAndDelete(existing._id);
       return res.json({ success: true, isSaved: false, message: 'Removed from saved roadmaps.' });
     } else {
-      await SavedRoadmap.create({ userId, roadmapId });
+      await SavedRoadmap.create({ userId: resolvedUserId, roadmapId });
       return res.json({ success: true, isSaved: true, message: 'Saved to your collection.' });
     }
   } catch (error: any) {
@@ -165,10 +175,10 @@ export const toggleSaveRoadmap = async (req: Request, res: Response) => {
   }
 };
 
-export const getSavedRoadmaps = async (req: Request, res: Response) => {
+export const getSavedRoadmaps = async (req: AuthenticatedRequest, res: Response) => {
   try {
-    const { userId = 'demo-user-123' } = req.query;
-    const savedItems = await SavedRoadmap.find({ userId: userId as string });
+    const resolvedUserId = (req.query.userId as string) || req.user?.id || 'demo-user-123';
+    const savedItems = await SavedRoadmap.find({ userId: resolvedUserId });
     const roadmapIds = savedItems.map(item => item.roadmapId);
     const roadmaps = await Roadmap.find({ _id: { $in: roadmapIds } });
 

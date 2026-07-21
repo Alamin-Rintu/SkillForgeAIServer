@@ -4,6 +4,7 @@ import Roadmap from '../models/Roadmap';
 import SavedRoadmap from '../models/SavedRoadmap';
 import ResumeAnalysis from '../models/ResumeAnalysis';
 import AIChat from '../models/AIChat';
+import { AuthenticatedRequest } from '../middleware/authMiddleware';
 
 export const getAnalytics = async (req: Request, res: Response) => {
   try {
@@ -46,9 +47,9 @@ export const getAnalytics = async (req: Request, res: Response) => {
   }
 };
 
-export const getUserStats = async (req: Request, res: Response) => {
+export const getUserStats = async (req: AuthenticatedRequest, res: Response) => {
   try {
-    const userId = (req.query.userId as string) || 'demo-user-123';
+    const userId = (req.query.userId as string) || req.user?.id || 'demo-user-123';
 
     const createdCount = await Roadmap.countDocuments({ creatorId: userId });
     const savedCount = await SavedRoadmap.countDocuments({ userId });

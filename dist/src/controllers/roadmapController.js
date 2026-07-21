@@ -4,6 +4,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.getSavedRoadmaps = exports.toggleSaveRoadmap = exports.deleteRoadmap = exports.createRoadmap = exports.getRoadmapById = exports.getRoadmaps = void 0;
+const mongoose_1 = __importDefault(require("mongoose"));
 const Roadmap_1 = __importDefault(require("../models/Roadmap"));
 const Review_1 = __importDefault(require("../models/Review"));
 const SavedRoadmap_1 = __importDefault(require("../models/SavedRoadmap"));
@@ -18,14 +19,14 @@ const getRoadmaps = async (req, res) => {
             query.$or = [
                 { title: { $regex: search, $options: 'i' } },
                 { shortDescription: { $regex: search, $options: 'i' } },
-                { skills: { $in: [new RegExp(search, 'i')] } }
+                { skills: { $regex: search, $options: 'i' } }
             ];
         }
         if (category && category !== 'All') {
-            query.category = category;
+            query.category = { $regex: category, $options: 'i' };
         }
         if (difficulty && difficulty !== 'All') {
-            query.difficulty = difficulty;
+            query.difficulty = { $regex: difficulty, $options: 'i' };
         }
         let sortOptions = { createdAt: -1 };
         if (sortBy === 'popular') {
@@ -60,11 +61,22 @@ exports.getRoadmaps = getRoadmaps;
 const getRoadmapById = async (req, res) => {
     try {
         const { id } = req.params;
-        const roadmap = await Roadmap_1.default.findById(id);
+        let roadmap = null;
+        if (mongoose_1.default.isValidObjectId(id)) {
+            roadmap = await Roadmap_1.default.findById(id);
+        }
+        if (!roadmap && typeof id === 'string') {
+            // Fallback search by title or string match if custom ID passed
+            roadmap = await Roadmap_1.default.findOne({
+                $or: [
+                    { title: { $regex: id.replace(/-/g, ' '), $options: 'i' } }
+                ]
+            });
+        }
         if (!roadmap) {
             return res.status(404).json({ success: false, message: 'Roadmap not found.' });
         }
-        const reviews = await Review_1.default.find({ roadmapId: id }).sort({ createdAt: -1 });
+        const reviews = await Review_1.default.find({ roadmapId: roadmap._id.toString() }).sort({ createdAt: -1 });
         return res.json({
             success: true,
             data: roadmap,

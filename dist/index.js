@@ -15,20 +15,13 @@ const roadmapRoutes_1 = __importDefault(require("./src/routes/roadmapRoutes"));
 const blogRoutes_1 = __importDefault(require("./src/routes/blogRoutes"));
 const aiRoutes_1 = __importDefault(require("./src/routes/aiRoutes"));
 const analyticsRoutes_1 = __importDefault(require("./src/routes/analyticsRoutes"));
-const seedData_1 = require("./src/seed/seedData");
 dotenv_1.default.config();
 const app = (0, express_1.default)();
 const PORT = process.env.PORT || 5000;
 // CORS setup supporting Credentials for Better Auth
-const allowedOrigins = [
-    'http://localhost:3000',
-    'http://localhost:3001',
-    'http://127.0.0.1:3000',
-    'http://localhost:5000'
-];
-const corsOptions = {
+app.use((0, cors_1.default)({
     origin: (origin, callback) => {
-        if (!origin || allowedOrigins.includes(origin) || origin.startsWith('http://localhost:')) {
+        if (!origin || origin.startsWith('http://localhost:') || origin.startsWith('http://127.0.0.1:')) {
             callback(null, true);
         }
         else {
@@ -39,18 +32,15 @@ const corsOptions = {
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin', 'Cookie', 'set-cookie'],
     exposedHeaders: ['Set-Cookie']
-};
-app.use((0, cors_1.default)(corsOptions));
+}));
 // Better Auth Express Router Mount (Express 5 compatible)
 app.use('/api/auth', (0, node_1.toNodeHandler)(auth_1.auth));
 // Body Parsing Middleware for custom routes
 app.use(express_1.default.json({ limit: '10mb' }));
 app.use(express_1.default.urlencoded({ extended: true, limit: '10mb' }));
-// Connect DBs & Seed
+// Connect DBs
 (0, db_1.connectDB)().then(() => {
-    (0, mongo_1.connectMongoNative)().then(() => {
-        (0, seedData_1.seedInitialData)();
-    });
+    (0, mongo_1.connectMongoNative)();
 });
 // Health check endpoint
 app.get('/', (req, res) => {
@@ -72,7 +62,10 @@ app.use((err, req, res, next) => {
     console.error('[server error]:', err);
     res.status(500).json({ success: false, message: err.message || 'Internal Server Error' });
 });
-app.listen(PORT, () => {
-    console.log(`[server]: Running at http://localhost:${PORT}`);
-    console.log(`[better-auth]: Mounted at http://localhost:${PORT}/api/auth`);
-});
+if (!process.env.VERCEL) {
+    app.listen(PORT, () => {
+        console.log(`[server]: Running at http://localhost:${PORT}`);
+        console.log(`[better-auth]: Mounted at http://localhost:${PORT}/api/auth`);
+    });
+}
+exports.default = app;

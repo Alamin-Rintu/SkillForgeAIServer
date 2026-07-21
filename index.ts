@@ -16,19 +16,7 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 
 // CORS setup supporting Credentials for Better Auth
-app.use(cors({
-  origin: (origin, callback) => {
-    if (!origin || origin.startsWith('http://localhost:') || origin.startsWith('http://127.0.0.1:')) {
-      callback(null, true);
-    } else {
-      callback(null, true);
-    }
-  },
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin', 'Cookie', 'set-cookie'],
-  exposedHeaders: ['Set-Cookie']
-}));
+app.use(cors());
 
 // Better Auth Express Router Mount (Express 5 compatible)
 app.use('/api/auth', toNodeHandler(auth));

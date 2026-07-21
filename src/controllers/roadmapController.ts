@@ -1,4 +1,5 @@
 import { Request, Response } from 'express';
+import mongoose from 'mongoose';
 import Roadmap from '../models/Roadmap';
 import Review from '../models/Review';
 import SavedRoadmap from '../models/SavedRoadmap';
@@ -17,16 +18,16 @@ export const getRoadmaps = async (req: Request, res: Response) => {
       query.$or = [
         { title: { $regex: search as string, $options: 'i' } },
         { shortDescription: { $regex: search as string, $options: 'i' } },
-        { skills: { $in: [new RegExp(search as string, 'i')] } }
+        { skills: { $regex: search as string, $options: 'i' } }
       ];
     }
 
     if (category && category !== 'All') {
-      query.category = category;
+      query.category = { $regex: category as string, $options: 'i' };
     }
 
     if (difficulty && difficulty !== 'All') {
-      query.difficulty = difficulty;
+      query.difficulty = { $regex: difficulty as string, $options: 'i' };
     }
 
     let sortOptions: any = { createdAt: -1 };
@@ -62,12 +63,26 @@ export const getRoadmaps = async (req: Request, res: Response) => {
 export const getRoadmapById = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const roadmap = await Roadmap.findById(id);
+
+    let roadmap = null;
+    if (mongoose.isValidObjectId(id)) {
+      roadmap = await Roadmap.findById(id);
+    }
+
+    if (!roadmap && typeof id === 'string') {
+      // Fallback search by title or string match if custom ID passed
+      roadmap = await Roadmap.findOne({
+        $or: [
+          { title: { $regex: id.replace(/-/g, ' '), $options: 'i' } }
+        ]
+      });
+    }
+
     if (!roadmap) {
       return res.status(404).json({ success: false, message: 'Roadmap not found.' });
     }
 
-    const reviews = await Review.find({ roadmapId: id }).sort({ createdAt: -1 });
+    const reviews = await Review.find({ roadmapId: roadmap._id.toString() }).sort({ createdAt: -1 });
 
     return res.json({
       success: true,

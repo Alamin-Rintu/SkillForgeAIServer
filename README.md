@@ -1,5 +1,9 @@
 # ⚙️ SkillForge AI Server — Express 5 & MongoDB Backend API
 
+[![Live Frontend App](https://img.shields.io/badge/Live%20Frontend-Vercel-blue?style=for-the-badge&logo=vercel)](https://skill-forge-ai-ivory-gamma.vercel.app/)
+
+**🌐 Live Application URL**: [https://skill-forge-ai-ivory-gamma.vercel.app/](https://skill-forge-ai-ivory-gamma.vercel.app/)
+
 Backend REST API & AI Service for **SkillForge AI** built with Node.js, Express 5, TypeScript, MongoDB Atlas, Better Auth, and Google Gemini API.
 
 ---

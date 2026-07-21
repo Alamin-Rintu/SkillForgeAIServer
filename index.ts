@@ -3,7 +3,6 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import { connectDB } from './src/config/db';
 import { connectMongoNative } from './src/config/mongo';
-import { auth } from './src/lib/auth';
 import authRoutes from './src/routes/authRoutes';
 import roadmapRoutes from './src/routes/roadmapRoutes';
 import blogRoutes from './src/routes/blogRoutes';
@@ -46,6 +45,8 @@ app.use(async (req: Request, res: Response, next: NextFunction) => {
 // Better Auth Express Router Mount (Express 5 & ESM compatible)
 app.use('/api/auth', async (req: Request, res: Response, next: NextFunction) => {
   try {
+    const { getAuth } = await import('./src/lib/auth');
+    const auth = await getAuth();
     const { toNodeHandler } = await import('better-auth/node');
     const handler = toNodeHandler(auth);
     return handler(req, res);

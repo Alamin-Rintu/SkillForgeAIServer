@@ -2,21 +2,47 @@ import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import { toNodeHandler } from 'better-auth/node';
-import { connectDB } from './src/config/db';
-import { connectMongoNative } from './src/config/mongo';
-import { auth } from './src/lib/auth';
-import authRoutes from './src/routes/authRoutes';
-import roadmapRoutes from './src/routes/roadmapRoutes';
-import blogRoutes from './src/routes/blogRoutes';
-import aiRoutes from './src/routes/aiRoutes';
-import analyticsRoutes from './src/routes/analyticsRoutes';
+import { connectDB } from './src/config/db.js';
+import { connectMongoNative } from './src/config/mongo.js';
+import { auth } from './src/lib/auth.js';
+import authRoutes from './src/routes/authRoutes.js';
+import roadmapRoutes from './src/routes/roadmapRoutes.js';
+import blogRoutes from './src/routes/blogRoutes.js';
+import aiRoutes from './src/routes/aiRoutes.js';
+import analyticsRoutes from './src/routes/analyticsRoutes.js';
+
 dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 5000;
 
 // CORS setup supporting Credentials for Better Auth
-app.use(cors());
+const corsOptions: cors.CorsOptions = {
+  origin: (origin, callback) => {
+    if (!origin || origin.startsWith('http://localhost:') || origin.startsWith('http://127.0.0.1:') || origin.endsWith('.vercel.app')) {
+      callback(null, true);
+    } else {
+      callback(null, true);
+    }
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin', 'Cookie', 'set-cookie'],
+  exposedHeaders: ['Set-Cookie']
+};
+
+app.use(cors(corsOptions));
+
+// Database connection middleware for Serverless execution
+app.use(async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    await connectDB();
+    await connectMongoNative();
+  } catch (err) {
+    console.error('[DB connection middleware error]:', err);
+  }
+  next();
+});
 
 // Better Auth Express Router Mount (Express 5 compatible)
 app.use('/api/auth', toNodeHandler(auth));
@@ -24,11 +50,6 @@ app.use('/api/auth', toNodeHandler(auth));
 // Body Parsing Middleware for custom routes
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
-
-// Connect DBs
-connectDB().then(() => {
-  connectMongoNative();
-});
 
 // Health check endpoint
 app.get('/', (req: Request, res: Response) => {
@@ -48,7 +69,7 @@ app.use('/api/ai', aiRoutes);
 app.use('/api/analytics', analyticsRoutes);
 
 // Global Error Handler
-app.use((err: any, req: Request, res: Response, next: any) => {
+app.use((err: any, req: Request, res: Response, next: NextFunction) => {
   console.error('[server error]:', err);
   res.status(500).json({ success: false, message: err.message || 'Internal Server Error' });
 });

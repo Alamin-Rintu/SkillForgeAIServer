@@ -5,9 +5,15 @@ const uri = process.env.MONGODB_URI || DEFAULT_URI;
 
 export const mongoClient = new MongoClient(uri);
 
+let isNativeConnected = false;
+
 export const connectMongoNative = async () => {
+  if (isNativeConnected) {
+    return mongoClient.db();
+  }
   try {
     await mongoClient.connect();
+    isNativeConnected = true;
     console.log('[database]: Native MongoClient connected to MongoDB Atlas for Better Auth');
     return mongoClient.db();
   } catch (err) {
@@ -18,4 +24,5 @@ export const connectMongoNative = async () => {
 
 export async function disconnectFromMongoDB() {
   await mongoClient.close();
+  isNativeConnected = false;
 }
